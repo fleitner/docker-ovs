@@ -35,3 +35,7 @@ func (v *NetNS) Initialize(config *Network, networkState *NetworkState) error {
 
 	return nil
 }
+
+func (v *NetNS) Destroy(n *Network, nspid int, networkState *NetworkState) error {
+	return nil
+}

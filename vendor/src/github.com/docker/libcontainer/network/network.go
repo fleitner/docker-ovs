@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/docker/libcontainer/netlink"
+	"github.com/docker/libcontainer/openvswitch"
 )
 
 func InterfaceUp(name string) error {
@@ -61,7 +62,27 @@ func SetInterfaceMaster(name, master string) error {
 	if err != nil {
 		return err
 	}
-	return netlink.AddToBridge(iface, masterIface)
+	err = netlink.AddToBridge(iface, masterIface)
+	if err != nil {
+		err = openvswitch.AddToBridge(iface, masterIface)
+	}
+	return err
+}
+
+func DelInterfaceMaster(name, master string) error {
+	iface, err := net.InterfaceByName(name)
+	if err != nil {
+		return err
+	}
+	masterIface, err := net.InterfaceByName(master)
+	if err != nil {
+		return err
+	}
+	err = netlink.DelFromBridge(iface, masterIface)
+	if err != nil {
+		err = openvswitch.DelFromBridge(iface, masterIface)
+	}
+	return err
 }
 
 func SetDefaultGateway(ip, ifaceName string) error {

@@ -21,3 +21,7 @@ func (l *Loopback) Initialize(config *Network, networkState *NetworkState) error
 	}
 	return nil
 }
+
+func (l *Loopback) Destroy(n *Network, nspid int, networkState *NetworkState) error {
+	return nil
+}

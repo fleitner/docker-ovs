@@ -109,6 +109,8 @@ func Exec(container *libcontainer.Config, stdin io.Reader, stdout, stderr io.Wri
 		}
 	}
 
+	DestroyNetworking(container, command.Process.Pid, syncPipe, &networkState)
+
 	return command.ProcessState.Sys().(syscall.WaitStatus).ExitStatus(), nil
 }
 
@@ -184,6 +186,20 @@ func InitializeNetworking(container *libcontainer.Config, nspid int, pipe *syncp
 		}
 	}
 	return pipe.SendToChild(networkState)
+}
+
+// DestroyNetworking destroys the container's network stack outside of the namespace
+func DestroyNetworking(container *libcontainer.Config, nspid int, pipe *syncpipe.SyncPipe, networkState *network.NetworkState) error {
+	for _, config := range container.Networks {
+		strategy, err := network.GetStrategy(config.Type)
+		if err != nil {
+			return err
+		}
+		if err := strategy.Destroy((*network.Network)(config), nspid, networkState); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // GetNamespaceFlags parses the container's Namespaces options to set the correct

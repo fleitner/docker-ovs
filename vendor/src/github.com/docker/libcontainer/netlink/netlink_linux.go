@@ -19,6 +19,7 @@ const (
 	SIOC_BRADDBR   = 0x89a0
 	SIOC_BRDELBR   = 0x89a1
 	SIOC_BRADDIF   = 0x89a2
+	SIOC_BRDELIF   = 0x89a3
 )
 
 var nextSeqNr uint32
@@ -1024,6 +1025,29 @@ func AddToBridge(iface, master *net.Interface) error {
 	ifr.IfruIndex = int32(iface.Index)
 
 	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, uintptr(s), SIOC_BRADDIF, uintptr(unsafe.Pointer(&ifr))); err != 0 {
+		return err
+	}
+
+	return nil
+}
+
+// Remove a slave from the bridge device.
+func DelFromBridge(iface, master *net.Interface) error {
+	if len(master.Name) >= IFNAMSIZ {
+		return fmt.Errorf("Interface name %s too long", master.Name)
+	}
+
+	s, err := getIfSocket()
+	if err != nil {
+		return err
+	}
+	defer syscall.Close(s)
+
+	ifr := ifreqIndex{}
+	copy(ifr.IfrnName[:len(ifr.IfrnName)-1], master.Name)
+	ifr.IfruIndex = int32(iface.Index)
+
+	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, uintptr(s), SIOC_BRDELIF, uintptr(unsafe.Pointer(&ifr))); err != 0 {
 		return err
 	}
 

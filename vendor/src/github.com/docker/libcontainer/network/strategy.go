@@ -21,6 +21,7 @@ var strategies = map[string]NetworkStrategy{
 type NetworkStrategy interface {
 	Create(*Network, int, *NetworkState) error
 	Initialize(*Network, *NetworkState) error
+	Destroy(*Network, int, *NetworkState) error
 }
 
 // GetStrategy returns the specific network strategy for the

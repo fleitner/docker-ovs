@@ -77,6 +77,17 @@ func (v *Veth) Initialize(config *Network, networkState *NetworkState) error {
 	return nil
 }
 
+func (v *Veth) Destroy(n *Network, nspid int, networkState *NetworkState) error {
+	var (
+		bridge = n.Bridge
+		VethHost = networkState.VethHost
+	)
+	if err := DelInterfaceMaster(VethHost, bridge); err != nil {
+		return err
+	}
+	return nil
+}
+
 // createVethPair will automatically generage two random names for
 // the veth pair and ensure that they have been created
 func createVethPair(prefix string) (name1 string, name2 string, err error) {
