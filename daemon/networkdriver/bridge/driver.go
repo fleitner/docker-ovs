@@ -9,6 +9,7 @@ import (
 
 	"github.com/docker/docker/daemon/networkdriver"
 	"github.com/docker/docker/daemon/networkdriver/ipallocator"
+	"github.com/docker/docker/daemon/networkdriver/openvswitch"
 	"github.com/docker/docker/daemon/networkdriver/portallocator"
 	"github.com/docker/docker/daemon/networkdriver/portmapper"
 	"github.com/docker/docker/engine"
@@ -69,8 +70,9 @@ var (
 		"192.168.44.1/24",
 	}
 
-	bridgeIface   string
-	bridgeNetwork *net.IPNet
+	bridgeIface     string
+	bridgeIfaceType string
+	bridgeNetwork   *net.IPNet
 
 	defaultBindingIP  = net.ParseIP("0.0.0.0")
 	currentInterfaces = ifaces{c: make(map[string]*networkInterface)}
@@ -91,6 +93,7 @@ func InitDriver(job *engine.Job) engine.Status {
 
 	bridgeIface = job.Getenv("BridgeIface")
 	usingDefaultBridge := false
+	bridgeIfaceType = job.Getenv("BridgeIfaceType")
 	if bridgeIface == "" {
 		usingDefaultBridge = true
 		bridgeIface = DefaultNetworkBridge
@@ -99,13 +102,16 @@ func InitDriver(job *engine.Job) engine.Status {
 	addr, err := networkdriver.GetIfaceAddr(bridgeIface)
 	if err != nil {
 		// If we're not using the default bridge, fail without trying to create it
-		if !usingDefaultBridge {
-			job.Logf("bridge not found: %s", bridgeIface)
-			return job.Error(err)
+		if bridgeIfaceType != "openvswitch" {
+			if !usingDefaultBridge {
+				job.Logf("bridge not found: %s", bridgeIface)
+				return job.Error(err)
+			}
 		}
+
 		// If the iface is not found, try to create it
 		job.Logf("creating new bridge for %s", bridgeIface)
-		if err := createBridge(bridgeIP); err != nil {
+		if err := createBridge(bridgeIP, bridgeIfaceType); err != nil {
 			return job.Error(err)
 		}
 
@@ -242,7 +248,7 @@ func setupIPTables(addr net.Addr, icc bool) error {
 // CreateBridgeIface creates a network bridge interface on the host system with the name `ifaceName`,
 // and attempts to configure it with an address which doesn't conflict with any other interface on the host.
 // If it can't find an address which doesn't conflict, it will return an error.
-func createBridge(bridgeIP string) error {
+func createBridge(bridgeIP, bridgeType string) error {
 	nameservers := []string{}
 	resolvConf, _ := resolvconf.Get()
 	// we don't check for an error here, because we don't really care
@@ -282,7 +288,7 @@ func createBridge(bridgeIP string) error {
 	}
 	log.Debugf("Creating bridge %s with network %s", bridgeIface, ifaceAddr)
 
-	if err := createBridgeIface(bridgeIface); err != nil {
+	if err := createBridgeIface(bridgeIface, bridgeType); err != nil {
 		return err
 	}
 
@@ -305,7 +311,11 @@ func createBridge(bridgeIP string) error {
 	return nil
 }
 
-func createBridgeIface(name string) error {
+func createBridgeIface(name, bridgeType string) error {
+	if bridgeType == "openvswitch" {
+		return openvswitch.CreateBridge(name)
+	}
+
 	kv, err := kernel.GetKernelVersion()
 	// only set the bridge's mac address if the kernel version is > 3.3
 	// before that it was not supported

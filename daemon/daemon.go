@@ -796,6 +796,7 @@ func NewDaemonFromDirectory(config *Config, eng *engine.Engine) (*Daemon, error)
 		job.SetenvBool("InterContainerCommunication", config.InterContainerCommunication)
 		job.SetenvBool("EnableIpForward", config.EnableIpForward)
 		job.Setenv("BridgeIface", config.BridgeIface)
+		job.Setenv("BridgeIfaceType", config.BridgeIfaceType)
 		job.Setenv("BridgeIP", config.BridgeIP)
 		job.Setenv("DefaultBindingIP", config.DefaultIp.String())
 

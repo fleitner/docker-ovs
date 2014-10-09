@@ -27,6 +27,7 @@ type Config struct {
 	EnableIpForward             bool
 	DefaultIp                   net.IP
 	BridgeIface                 string
+	BridgeIfaceType             string
 	BridgeIP                    string
 	InterContainerCommunication bool
 	GraphDriver                 string
@@ -50,6 +51,7 @@ func (config *Config) InstallFlags() {
 	flag.BoolVar(&config.EnableIpForward, []string{"#ip-forward", "-ip-forward"}, true, "Enable net.ipv4.ip_forward")
 	flag.StringVar(&config.BridgeIP, []string{"#bip", "-bip"}, "", "Use this CIDR notation address for the network bridge's IP, not compatible with -b")
 	flag.StringVar(&config.BridgeIface, []string{"b", "-bridge"}, "", "Attach containers to a pre-existing network bridge\nuse 'none' to disable container networking")
+	flag.StringVar(&config.BridgeIfaceType, []string{"#bridgetype", "-bridgetype"}, "", "Set the bridge type to be created.\nMight be used in conjuction with -bridge to set its name.")
 	flag.BoolVar(&config.InterContainerCommunication, []string{"#icc", "-icc"}, true, "Enable inter-container communication")
 	flag.StringVar(&config.GraphDriver, []string{"s", "-storage-driver"}, "", "Force the Docker runtime to use a specific storage driver")
 	flag.StringVar(&config.ExecDriver, []string{"e", "-exec-driver"}, "native", "Force the Docker runtime to use a specific exec driver")
